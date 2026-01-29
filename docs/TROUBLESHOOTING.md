@@ -6,8 +6,9 @@
 **症状**: `npm run dev` 起動時に `Error code: P1012` や `schema validation` エラーが出る。
 **原因**: プロジェクトの dependencies にある Prisma (`^6.x`) と、`npx` がダウンロードする最新の Prisma (`7.x`など) でバージョン不整合が起きるため。
 **対策**:
-- `shopify.web.toml` や `package.json` のスクリプトでは、必ず `npx --no-install prisma ...` を使用する。
-- `--no-install` オプションにより、ローカルの `node_modules` にある `prisma` バイナリの使用が強制され、勝手なダウンロードを防ぐ。
+- `shopify.web.toml` や `package.json` のスクリプトでは、**`npm run prisma --`** (または `npm exec prisma --`) を使用する。
+- `npx` (特に `--no-install` 無し) は環境によって最新版を勝手にダウンロードしてしまうリスクがあるため避ける。
+- 推奨コマンド例: `npm run prisma -- generate`
 
 ### 2. Prisma Import Error (500 Internal Server Error)
 **症状**: `/api/*` エンドポイントにアクセスすると 500 エラーが発生。ログに `Cannot read properties of undefined (reading 'Client')` などが出る。
