@@ -2,6 +2,7 @@
   "name": "speed-banner",
   "private": true,
   "scripts": {
+    "backup": "node scripts/backup.cjs",
     "scan:secrets": "node scripts/scan-secrets.cjs",
     "build": "remix vite:build",
     "dev": "shopify app dev",
