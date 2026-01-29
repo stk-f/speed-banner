@@ -1,7 +1,7 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import { prisma } from "../db.server";
+import prisma from "../db.server";
 
 // Helper to calculate logic
 // In production, we might want to move this to model/service
@@ -50,7 +50,10 @@ async function getHighestPriorityCampaign(shopDomain: string, path: string, devi
                 message: cam.message,
                 buttonText: cam.buttonText,
                 buttonUrl: cam.buttonUrl,
-                style: JSON.parse(cam.styleJson || "{}"),
+                style: (() => {
+                    try { return JSON.parse(cam.styleJson || "{}"); }
+                    catch { return {}; }
+                })(),
                 frequency: cam.rule.frequency,
                 suppressDays: cam.rule.suppressDaysAfterClose,
             };
@@ -61,17 +64,25 @@ async function getHighestPriorityCampaign(shopDomain: string, path: string, devi
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-    const { session, admin } = await authenticate.public.appProxy(request);
+    try {
+        const { session, admin } = await authenticate.public.appProxy(request);
 
-    if (!session || !session.shop) {
-        return json({ error: "Unauthorized" }, { status: 401 });
+        if (!session || !session.shop) {
+            return json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const url = new URL(request.url);
+        const path = url.searchParams.get("path") || "/";
+        const device = url.searchParams.get("device") || "DESKTOP"; // Client should send DESKTOP or MOBILE
+
+        const campaign = await getHighestPriorityCampaign(session.shop, path, device.toUpperCase());
+
+        return json({ campaign });
+    } catch (error) {
+        if (error instanceof Response) {
+            return error;
+        }
+        console.error("Loader Error:", error);
+        return json({ error: "Internal Server Error" }, { status: 500 });
     }
-
-    const url = new URL(request.url);
-    const path = url.searchParams.get("path") || "/";
-    const device = url.searchParams.get("device") || "DESKTOP"; // Client should send DESKTOP or MOBILE
-
-    const campaign = await getHighestPriorityCampaign(session.shop, path, device.toUpperCase());
-
-    return json({ campaign });
 }

@@ -1,7 +1,7 @@
 import { json } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import { prisma } from "../db.server"; // Note: Event model not yet created in DB, deferred to Phase 3. 
+import prisma from "../db.server"; // Note: Event model not yet created in DB, deferred to Phase 3. 
 // However, the task for Phase 2 "Frontend Logic" requires fetch & render, and Phase 3 is Analytics.
 // The user approved Phase 2 "Event API (App Proxy) 実装" in the updated plan.
 // I need to implement the endpoint, but I cannot save to DB if table doesn't exist.
