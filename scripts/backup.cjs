@@ -8,7 +8,7 @@ const os = require('os');
 // or just resolve from the script location.
 // Requirement: "Root: C:\Users\olivy\.gemini\antigravity\workspace\shopify-speed-banner"
 // We can find root relative to this script (scripts/backup.cjs -> ../)
-const ROOT_DIR = path.resolve(__dirname, '..');
+const ROOT_DIR = 'C:\\Users\\olivy\\.gemini\\antigravity\\workspace\\shopify-speed-banner';
 
 // Requirement: "Output: C:\Users\olivy\OneDrive\デスクトップ\shopify-speed-banner"
 // We try to construct this robustly using USERPROFILE, or fall back to the raw path.
@@ -115,6 +115,7 @@ function resolveCollision(targetPath) {
 // --- Main ---
 try {
     // 1. Ensure absolute root context
+    if (!fs.existsSync(ROOT_DIR)) { throw new Error('ROOT_DIR not found: ' + ROOT_DIR); }
     console.log(`📂 Project Root: ${ROOT_DIR}`);
     process.chdir(ROOT_DIR);
 
