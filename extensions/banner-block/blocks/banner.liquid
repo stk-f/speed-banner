@@ -1,0 +1,126 @@
+{% schema %}
+{
+  "name": "Banner Block",
+  "target": "section",
+  "settings": [],
+  "stylesheet": "banner.css"
+}
+{% endschema %}
+
+<div class="agx-speed-banner" data-block-id="{{ block.id }}"></div>
+
+<script>
+(function() {
+  var container = document.querySelector('.agx-speed-banner[data-block-id="{{ block.id }}"]');
+  if (!container) return;
+
+  var shop = Shopify.shop;
+  // Simple device check
+  var isMobile = window.innerWidth <= 768;
+  var deviceType = isMobile ? 'MOBILE' : 'DESKTOP';
+  
+  var PREFIX = 'agx:' + shop + ':';
+
+  function getStorage(key) {
+    try { return localStorage.getItem(PREFIX + key); } catch(e) { return null; }
+  }
+  function setStorage(key, val) {
+    try { localStorage.setItem(PREFIX + key, val); } catch(e) {}
+  }
+
+  // Fail-safe fetch
+  var endpoint = '/apps/speed-banner/public-config?path=' + encodeURIComponent(window.location.pathname) + '&device=' + deviceType;
+  
+  fetch(endpoint)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (!data || !data.campaign) return;
+      var c = data.campaign;
+      
+      // Frequency Capping Logic
+      var now = Date.now();
+      var shownKey = c.id + ':shownAt';
+      var closedKey = c.id + ':closedUntil';
+      
+      var lastShown = parseInt(getStorage(shownKey) || '0');
+      var closedUntil = parseInt(getStorage(closedKey) || '0');
+      
+      if (now < closedUntil) return; // Suppressed
+
+      if (c.frequency === 'FIRST' && lastShown > 0) return;
+      if (c.frequency === 'H24' && (now - lastShown) < 86400000) return;
+      if (c.frequency === 'D7' && (now - lastShown) < 604800000) return;
+
+      // Render
+      renderBanner(c, container);
+      
+      // Record Impression
+      setStorage(shownKey, now);
+      // Optional: Post impression event
+      // Navigator.sendBeacon preferred for analytics
+      if (navigator.sendBeacon) {
+         // navigator.sendBeacon('/apps/speed-banner/event', JSON.stringify({type:'impression', id: c.id}));
+         // Simplified for MVP proxy POST
+         fetch('/apps/speed-banner/event', { method: 'POST', body: JSON.stringify({type:'impression', id: c.id}) });
+      }
+
+    })
+    .catch(function(e) {
+      // Fail safely, do nothing
+      console.debug('Banner fetch failed', e);
+    });
+
+  function renderBanner(c, target) {
+    // Style construction
+    var style = c.style || {};
+    var posStyle = c.placement === 'BOTTOM' ? 'bottom: 0;' : 'top: 0;';
+    // Overlay mode: position fixed, z-index high. 
+    // Safe area handling
+    var safeArea = c.placement === 'BOTTOM' ? 'padding-bottom: env(safe-area-inset-bottom);' : 'padding-top: env(safe-area-inset-top);';
+    
+    var html = `
+      <div style="
+        position: fixed; ${posStyle} left: 0; right: 0; z-index: 2147483647;
+        background-color: ${style.backgroundColor || '#000'}; 
+        color: ${style.textColor || '#fff'};
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 20px; font-family: sans-serif; font-size: 14px;
+        ${safeArea}
+      ">
+        <div style="flex: 1; text-align: center;">
+          <span>${escapeHtml(c.message)}</span>
+          ${ c.buttonText ? `
+            <a href="${escapeHtml(c.buttonUrl)}" style="
+              display: inline-block; margin-left: 10px; padding: 4px 12px; 
+              background: rgba(255,255,255,0.2); color: inherit; text-decoration: none; border-radius: 4px; font-size: 12px;
+            ">${escapeHtml(c.buttonText)}</a>
+          ` : '' }
+        </div>
+        <button style="
+          background: none; border: none; color: inherit; font-size: 20px; cursor: pointer; padding: 0 0 0 15px;
+        " onclick="closeBanner('${c.id}', ${c.suppressDays}, this)">×</button>
+      </div>
+    `;
+    
+    target.innerHTML = html;
+  }
+
+  window.closeBanner = function(cid, days, btn) {
+    if(btn) btn.closest('.agx-speed-banner').innerHTML = '';
+    var until = Date.now() + (days * 86400000);
+    setStorage(cid + ':closedUntil', until);
+  };
+  
+  function escapeHtml(text) {
+    if (!text) return '';
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+})();
+</script>

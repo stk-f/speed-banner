@@ -1,0 +1,5 @@
+/* Minimal CSS file required by schema */
+/* Most styles are inline for performance/dynamic config, but we can put resets here */
+.agx-speed-banner {
+  display: block;
+}
