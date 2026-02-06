@@ -11,6 +11,44 @@ import prisma from "./db.server";
 export const MONTHLY_PLAN = "Monthly Subscription" as const;
 export const ANNUAL_PLAN = "Annual Subscription" as const;
 
+export type Plan = "FREE" | "TRIAL" | "PAID";
+
+export function getPlanFromSubscription(subscription: any): Plan {
+  // No subscription => FREE
+  if (!subscription) return "FREE";
+
+  // 1) 明示的な trialEnd が存在し未来日であれば TRIAL
+  //    -> Shopify のレスポンスで trialEndsOn / trial_end / trial_end_at のどれかで来る可能性があるため複数キーをチェック
+  const trialKeys = ['trialEndsOn', 'trial_end', 'trial_end_at', 'trialEndsAt'];
+  for (const k of trialKeys) {
+    const v = subscription[k];
+    if (v) {
+      const d = new Date(String(v));
+      if (!isNaN(d.getTime()) && d > new Date()) {
+        return "TRIAL";
+      }
+    }
+  }
+
+  // 2) subscription.status が明確に "active" であれば PAID
+  //    status の表現は外部 API により差があるためケースインセンシティブに判定
+  if (subscription.status && typeof subscription.status === 'string') {
+    const s = subscription.status.toLowerCase();
+    if (s.includes('active') || s.includes('paid')) {
+      return "PAID";
+    }
+    // 一部 API では "trialing" の表現があるため、trialEndsOn が無い場合は保守的に TRIAL ではなく PAID へ落とす
+  }
+
+  // 3) 開発環境でのみ subscription.test を TRIAL 判定に使う（本番事故防止のため）
+  if (process.env.NODE_ENV !== 'production' && subscription.test) {
+    return "TRIAL";
+  }
+
+  // 4) 最終フォールバック: subscription オブジェクトが存在する時点で PAID と見なす
+  return "PAID";
+}
+
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
