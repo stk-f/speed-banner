@@ -2,7 +2,7 @@
 
 client_id = "06c1b72d88edfa164cba1f8cccfa5ac6"
 name = "speed-banner"
-application_url = "https://example.com"
+application_url = "https://speedbanner.app"
 embedded = true
 
 [build]
@@ -25,9 +25,13 @@ api_version = "2026-04"
 scopes = "write_products"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [
+  "https://speedbanner.app/auth/callback",
+  "https://speedbanner.app/auth/shopify/callback",
+  "https://speedbanner.app/api/auth/callback"
+]
 
 [app_proxy]
-url = "https://example.com/api"
+url = "https://speedbanner.app/api"
 subpath = "speed-banner"
 prefix = "apps"
