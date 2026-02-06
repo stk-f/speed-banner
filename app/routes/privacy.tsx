@@ -7,9 +7,9 @@ export default function Privacy() {
             <h2>1. Information We Collect</h2>
             <p>When you install Speed Banner, we are automatically able to access certain types of information from your Shopify account:</p>
             <ul>
-                <li><strong>Shop Information:</strong> Shop domain, primary language, and country (to localize the banner experience).</li>
+                <li><strong>Shop Information:</strong> Shop myshopify domain (to identify your account).</li>
                 <li><strong>Campaign Data:</strong> Banners, messages, and settings you configure within the app.</li>
-                <li><strong>Analytics Data:</strong> Anonymous impression and click counts for your banners. We do not track individual shopper identities (no PII is collected from your customers).</li>
+                <li><strong>Analytics Data:</strong> Anonymous impression and click counts for your banners. We do not track individual shopper identities.</li>
             </ul>
 
             <h2>2. How We Use Information</h2>
@@ -20,7 +20,7 @@ export default function Privacy() {
             </ul>
 
             <h2>3. Data Retention</h2>
-            <p>We retain your campaign settings and analytics data for as long as you have the app installed. If you uninstall the app, your configuration data is deleted from our database within 30 days. Aggregated anonymous statistics may be retained for internal improvements.</p>
+            <p>We retain your campaign settings and analytics data only for as long as you have the app installed. If you uninstall the app, all your data (Shop, Campaigns, Analytics) is deleted from our database associated with your shop.</p>
 
             <h2>4. Data Sharing</h2>
             <p>We do not share, sell, or disclose your data to third parties, except as required to provide the service (e.g., hosting providers) or to comply with the law.</p>
