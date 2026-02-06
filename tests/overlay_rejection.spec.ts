@@ -284,7 +284,7 @@ test.describe('Banner Core Regression Tests', () => {
     await page.addScriptTag({ content: bannerScript });
 
     await expect.poll(() => events.length).toBeGreaterThanOrEqual(1);
-    expect(events.some(e => e.type === 'impression' && e.id === 'cmp_imp')).toBe(true);
+    expect(events.some(e => e.type === 'impression' && e.campaignId === 'cmp_imp')).toBe(true);
   });
 
   test('TC7: Measurement - Click Event', async ({ page }) => {
@@ -317,8 +317,8 @@ test.describe('Banner Core Regression Tests', () => {
     await cta.click();
 
     await expect.poll(() => events.length).toBeGreaterThanOrEqual(2);
-    expect(events.some(e => e.type === 'impression' && e.id === 'cmp_click')).toBe(true);
-    expect(events.some(e => e.type === 'click' && e.id === 'cmp_click')).toBe(true);
+    expect(events.some(e => e.type === 'impression' && e.campaignId === 'cmp_click')).toBe(true);
+    expect(events.some(e => e.type === 'click' && e.campaignId === 'cmp_click')).toBe(true);
   });
 
   test('TC8: Shopify Preview Bar Detection - Should offset banner', async ({ page }) => {

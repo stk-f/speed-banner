@@ -78,3 +78,14 @@ model Rule {
 }
 
 
+model AnalyticsDaily {
+  id          String   @id @default(cuid())
+  campaignId  String
+  date        String   // 'YYYY-MM-DD' UTC
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([campaignId, date])
+}

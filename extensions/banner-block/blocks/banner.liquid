@@ -412,7 +412,7 @@
     var cta = inst.container.querySelector('[data-agx-cta="1"]');
     if (cta) {
       cta.addEventListener('click', function () {
-        postEvent({ type: 'click', id: c.id });
+        postEvent({ type: 'click', campaignId: c.id });
       });
     }
 
@@ -430,6 +430,34 @@
       }
     }
 
+    // --- Phase 5: Impression Tracking ---
+    try {
+      // Deduplication: 1 session 1 time (using localStorage as requested)
+      var impKey = 'agx_imp_' + c.id;
+      var alreadyImp = getStorage(impKey);
+      
+      if (!alreadyImp) {
+        if ('IntersectionObserver' in window) {
+          var obs = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+              if (entry.isIntersecting) {
+                postEvent({ type: 'impression', campaignId: c.id });
+                setStorage(impKey, '1');
+                obs.disconnect();
+              }
+            });
+          }, { threshold: 0 }); // >0px visible
+          obs.observe(root);
+        } else {
+          // Fallback
+          postEvent({ type: 'impression', campaignId: c.id });
+          setStorage(impKey, '1');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    
     if (isDebug()) {
       setTimeout(function () {
         if (!inst.root) return;
@@ -465,8 +493,10 @@
 
         renderBanner(c);
 
+
         setStorage(shownKey, now);
-        postEvent({ type: 'impression', id: c.id });
+
+        // Phase 5: Impression (moved to IntersectionObserver in renderBanner)
       })
       .catch(function (e) {
         if (isDebug()) console.debug('Banner fetch failed', e);
