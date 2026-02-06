@@ -392,7 +392,6 @@
     inst.root = root;
 
     // placement + resize
-    // placement + resize
     applyPlacement(root, placement, inst);
     bindGlobalResizeOnce();
 
@@ -495,8 +494,6 @@
 
 
         setStorage(shownKey, now);
-
-        // Phase 5: Impression (moved to IntersectionObserver in renderBanner)
       })
       .catch(function (e) {
         if (isDebug()) console.debug('Banner fetch failed', e);

@@ -75,7 +75,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     } catch (error) {
         console.error("Analytics API Error:", error);
-        // Requirement: "Error ... Banner side not broken" -> Return 200 is safest for beacon/fire-and-forget
         return json({}, { status: 200, headers: corsHeaders });
     }
 };
