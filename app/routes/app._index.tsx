@@ -10,6 +10,7 @@ import {
   IndexTable,
   LegacyCard,
   useIndexResourceState,
+  List,
 } from "@shopify/polaris";
 import { authenticate, MONTHLY_PLAN, ANNUAL_PLAN } from "../shopify.server";
 import prisma from "../db.server";
@@ -147,6 +148,28 @@ export default function Index() {
               <BlockStack gap="200">
                 <Text as="h2" variant="headingMd">Current Plan</Text>
                 <Text as="p" variant="bodyMd">{currentPlan}</Text>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        </Layout>
+
+        {/* 3-Step Value Checklist */}
+        <Layout>
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h2" variant="headingMd">Get value in 3 steps (5 min)</Text>
+                <List type="number">
+                  <List.Item>
+                    <Text as="span" fontWeight="bold">Create a campaign</Text> - Use the "Create New Campaign" button below.
+                  </List.Item>
+                  <List.Item>
+                    <Text as="span" fontWeight="bold">Add 'Banner Block' in Theme Editor</Text> - Go to your Shopify Admin &gt; Online Store &gt; Themes &gt; Customize.
+                  </List.Item>
+                  <List.Item>
+                    <Text as="span" fontWeight="bold">Open your storefront</Text> - Reload once to register an impression (session-scoped) and confirm analytics below.
+                  </List.Item>
+                </List>
               </BlockStack>
             </Card>
           </Layout.Section>

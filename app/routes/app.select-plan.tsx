@@ -10,6 +10,7 @@ import {
     Text,
     InlineGrid,
     Box,
+    List,
 } from "@shopify/polaris";
 import { authenticate, MONTHLY_PLAN, ANNUAL_PLAN } from "../shopify.server";
 
@@ -62,6 +63,28 @@ export default function SelectPlan() {
     return (
         <Page title="Select a Plan">
             <Layout>
+                <Layout.Section>
+                    <Card>
+                        <BlockStack gap="400">
+                            <Text as="h2" variant="headingMd">What you get</Text>
+                            <List>
+                                <List.Item>Speed-first banner (minimal JS, avoids CLS/LCP issues)</List.Item>
+                                <List.Item>Impression & click tracking</List.Item>
+                                <List.Item>Last 30 days dashboard report</List.Item>
+                            </List>
+                            <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                                <BlockStack gap="200">
+                                    <Text as="p" variant="bodySm">
+                                        Start with a <strong>30-day free trial</strong>. You can cancel anytime from Shopify admin (Apps &gt; App and sales channels).
+                                    </Text>
+                                    <Text as="p" variant="bodySm" tone="subdued">
+                                        No charges during the trial.
+                                    </Text>
+                                </BlockStack>
+                            </Box>
+                        </BlockStack>
+                    </Card>
+                </Layout.Section>
                 <Layout.Section>
                     <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
                         {/* Monthly Plan */}
