@@ -15,6 +15,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: "Method not allowed" }, { status: 405, headers: corsHeaders });
     }
 
+    // 0. Security Guard (Optional but recommended)
+    const cType = request.headers.get("Content-Type");
+    if (!cType || !cType.includes("application/json")) {
+        // Return 200 to silence potential CORS errors in browser console for blocking requests
+        return json({}, { status: 200, headers: corsHeaders });
+    }
+
     try {
         // 1. Parsing and Validation
         let data;
