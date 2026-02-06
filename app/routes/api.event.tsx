@@ -1,9 +1,10 @@
 import { type ActionFunctionArgs, json } from "@remix-run/node";
 import prisma from "../db.server";
 
+import { authenticate } from "../shopify.server";
+
 export const action = async ({ request }: ActionFunctionArgs) => {
-    // Handle preflight OPTIONS request if necessary (though usually handled by server/browser interaction, 
-    // explicitly handling OPTIONS for CORS is safe)
+    // Handle preflight OPTIONS request if necessary
     if (request.method === "OPTIONS") {
         return new Response(null, {
             status: 204,
@@ -15,10 +16,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: "Method not allowed" }, { status: 405, headers: corsHeaders });
     }
 
-    // 0. Security Guard (Optional but recommended)
+    // 0. Security Guard (App Proxy Authentication)
+    let shop: string;
+    try {
+        const { session } = await authenticate.public.appProxy(request);
+        if (!session || !session.shop) {
+            // Valid signature but no shop info? Should rarely happen for App Proxy.
+            return json({}, { status: 200, headers: corsHeaders });
+        }
+        shop = session.shop;
+    } catch (e) {
+        // Signature validation failed or not an App Proxy request
+        // Return 200 to keep it silent as requested
+        return json({}, { status: 200, headers: corsHeaders });
+    }
+
+    // 0.1 Content-Type Guard
     const cType = request.headers.get("Content-Type");
     if (!cType || !cType.includes("application/json")) {
-        // Return 200 to silence potential CORS errors in browser console for blocking requests
         return json({}, { status: 200, headers: corsHeaders });
     }
 
@@ -41,14 +56,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             return json({ error: "Invalid type" }, { status: 400, headers: corsHeaders });
         }
 
-        // 2. Check Campaign Existence logic (Strict requirement: ignore if not found)
+        // 2. Check Campaign Existence AND Shop Ownership
         const campaign = await prisma.campaign.findUnique({
             where: { id: campaignId },
-            select: { id: true },
+            include: { shop: true },
         });
 
         if (!campaign) {
-            // "Nothing to do HTTP 200"
+            return json({}, { status: 200, headers: corsHeaders });
+        }
+
+        // Cross-Shop Validation
+        if (campaign.shop.shopDomain !== shop) {
+            // Campaign exists but belongs to a different shop. Reject silently.
             return json({}, { status: 200, headers: corsHeaders });
         }
 
