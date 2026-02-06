@@ -60,6 +60,7 @@ model Campaign {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+
   @@index([shopId, enabled, priority])
 }
 
@@ -75,3 +76,5 @@ model Rule {
 
   @@index([campaignId])
 }
+
+

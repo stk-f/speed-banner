@@ -9,9 +9,8 @@ import {
     FormLayout,
     TextField,
     Select,
-    Checkbox,
-    Button,
     BlockStack,
+    Checkbox,
     InlineGrid,
     Text,
 } from "@shopify/polaris";

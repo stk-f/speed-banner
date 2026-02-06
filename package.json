@@ -13,8 +13,9 @@
     "env": "shopify app env",
     "start": "remix-serve ./build/server/index.js",
     "docker-start": "npm run setup && npm run start",
-    "setup": "npm run prisma -- generate && npm run prisma -- migrate deploy",
+    "setup": "npm exec prisma generate && npm exec prisma migrate deploy",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
+    "test:e2e": "playwright test",
     "shopify": "shopify",
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
@@ -42,6 +43,7 @@
     "vite-tsconfig-paths": "^5.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.1",
     "@remix-run/eslint-config": "^2.16.1",
     "@remix-run/route-config": "^2.16.1",
     "@shopify/api-codegen-preset": "^1.1.1",

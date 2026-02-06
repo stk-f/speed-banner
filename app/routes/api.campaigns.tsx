@@ -4,7 +4,7 @@ import { authenticate } from "../shopify.server";
 import { getCampaigns, createCampaign } from "../models/campaign.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-    const { admin, session } = await authenticate.admin(request);
+    const { session } = await authenticate.admin(request);
     const campaigns = await getCampaigns(session.shop); // passing shop domain as ID for MVP listing if shopId logic matches
     // Note: getCampaigns expects shopId. In our createCampaign logic, we linked Shop by ID.
     // If we used shopDomain as ID in Shop table, this works.
@@ -36,7 +36,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-    const { admin, session } = await authenticate.admin(request);
+    const { session } = await authenticate.admin(request);
 
     if (request.method === "POST") {
         const data = await request.json();

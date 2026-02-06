@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { json, redirect } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { useActionData, useSubmit, useNavigation } from "@remix-run/react";
+import { useSubmit, useNavigation } from "@remix-run/react";
 import {
     Page,
     Layout,
@@ -9,12 +9,10 @@ import {
     FormLayout,
     TextField,
     Select,
-    Checkbox,
-    Button,
     BlockStack,
+    Checkbox,
     InlineGrid,
     Text,
-    Box,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { createCampaign } from "../models/campaign.server";
@@ -69,7 +67,7 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function NewCampaign() {
     const submit = useSubmit();
     const nav = useNavigation();
-    const actionData = useActionData<typeof action>();
+    // const actionData = useActionData<typeof action>();
     const isSaving = nav.state === "submitting";
 
     const [formState, setFormState] = useState({

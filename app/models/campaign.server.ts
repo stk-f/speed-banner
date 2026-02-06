@@ -1,5 +1,5 @@
 import prisma from "../db.server";
-import type { Campaign, Rule, Shop } from "@prisma/client";
+import type { Campaign, Rule, Shop } from "@prisma/client"; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 export enum Placement {
     TOP = "TOP",
@@ -63,32 +63,7 @@ export async function getCampaign(id: string, shopId: string) {
     });
 }
 
-// Ensure Shop exists before creating campaign
-async function ensureShop(shopDomain: string, shopId: string) {
-    // shopId in Session might be different from Shop model ID if not synced.
-    // We assume the shopId passed here is capable of identifying the shop.
-    // However, in standard Shopify templates, 'shop' in Session is the domain.
-    // We need to clarify what 'shopId' is passed. Usually we pass shop domain to find the Shop record.
-    // But our Campaign model uses a relation to Shop.id.
 
-    // Strategy: Upsert Shop using shopDomain (which we assume is unique and known).
-    // If the input is actually the shop domain, we can handle existing check.
-
-    // Implementation Note: Calling code should ideally pass the Shop ID or Domain.
-    // Standard session info gives us the shop domain.
-    // We will upsert the Shop record based on the domain.
-
-    return prisma.shop.upsert({
-        where: { shopDomain: shopDomain }, // Using shopDomain as unique key
-        update: {},
-        create: {
-            id: shopId, // If shopId is predictable (e.g. from session.id or offline id), use it.
-            // If we don't know the ID, we might need to generate one or fetch from Shopify API.
-            // For MVP, we can assume the session shop ID is valid or just use domain as ID if compatible.
-            shopDomain: shopDomain,
-        },
-    });
-}
 
 // Simplified Create: Accepts shopDomain to resolve Shop relation
 export async function createCampaign(shopDomain: string, campaignData: CreateCampaignInput) {

@@ -10,117 +10,469 @@
 <div class="agx-speed-banner" data-block-id="{{ block.id }}"></div>
 
 <script>
-(function() {
+(function () {
+  // --- Container ---
   var container = document.querySelector('.agx-speed-banner[data-block-id="{{ block.id }}"]');
   if (!container) return;
 
-  var shop = Shopify.shop;
-  // Simple device check
-  var isMobile = window.innerWidth <= 768;
-  var deviceType = isMobile ? 'MOBILE' : 'DESKTOP';
-  
+  // --- Registry (per blockId) ---
+  var blockId = container.getAttribute('data-block-id') || 'unknown';
+  window.__AGX_SPEED_BANNER__ = window.__AGX_SPEED_BANNER__ || { instances: {}, resizeBound: false };
+  if (window.__AGX_SPEED_BANNER__.instances[blockId]) return; // prevent double init for same block
+
+  // --- Constants (safety) ---
+  var shop = (window.Shopify && Shopify.shop) ? Shopify.shop : 'unknown';
   var PREFIX = 'agx:' + shop + ':';
+  var MAX_HEADER_HEIGHT = 300;   // header clamp
+  var MAX_BAR_HEIGHT = 200;      // bottom bar clamp (safe: allow a bit larger than 140)
+  var OVERLAY_MIN_HEIGHT = 300;  // overlay if >= 300px
+  var OVERLAY_MIN_VH = 0.33;     // or >= 33% of viewport height
+  var XRAY_MAX_DEPTH = 5;
 
-  function getStorage(key) {
-    try { return localStorage.getItem(PREFIX + key); } catch(e) { return null; }
-  }
-  function setStorage(key, val) {
-    try { localStorage.setItem(PREFIX + key, val); } catch(e) {}
-  }
-
-  // Fail-safe fetch
-  var endpoint = '/apps/speed-banner/public-config?path=' + encodeURIComponent(window.location.pathname) + '&device=' + deviceType;
-  
-  fetch(endpoint)
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (!data || !data.campaign) return;
-      var c = data.campaign;
-      
-      // Frequency Capping Logic
-      var now = Date.now();
-      var shownKey = c.id + ':shownAt';
-      var closedKey = c.id + ':closedUntil';
-      
-      var lastShown = parseInt(getStorage(shownKey) || '0');
-      var closedUntil = parseInt(getStorage(closedKey) || '0');
-      
-      if (now < closedUntil) return; // Suppressed
-
-      if (c.frequency === 'FIRST' && lastShown > 0) return;
-      if (c.frequency === 'H24' && (now - lastShown) < 86400000) return;
-      if (c.frequency === 'D7' && (now - lastShown) < 604800000) return;
-
-      // Render
-      renderBanner(c, container);
-      
-      // Record Impression
-      setStorage(shownKey, now);
-      // Optional: Post impression event
-      // Navigator.sendBeacon preferred for analytics
-      if (navigator.sendBeacon) {
-         // navigator.sendBeacon('/apps/speed-banner/event', JSON.stringify({type:'impression', id: c.id}));
-         // Simplified for MVP proxy POST
-         fetch('/apps/speed-banner/event', { method: 'POST', body: JSON.stringify({type:'impression', id: c.id}) });
-      }
-
-    })
-    .catch(function(e) {
-      // Fail safely, do nothing
-      console.debug('Banner fetch failed', e);
-    });
-
-  function renderBanner(c, target) {
-    // Style construction
-    var style = c.style || {};
-    var posStyle = c.placement === 'BOTTOM' ? 'bottom: 0;' : 'top: 0;';
-    // Overlay mode: position fixed, z-index high. 
-    // Safe area handling
-    var safeArea = c.placement === 'BOTTOM' ? 'padding-bottom: env(safe-area-inset-bottom);' : 'padding-top: env(safe-area-inset-top);';
-    
-    var html = `
-      <div style="
-        position: fixed; ${posStyle} left: 0; right: 0; z-index: 2147483647;
-        background-color: ${style.backgroundColor || '#000'}; 
-        color: ${style.textColor || '#fff'};
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 10px 20px; font-family: sans-serif; font-size: 14px;
-        ${safeArea}
-      ">
-        <div style="flex: 1; text-align: center;">
-          <span>${escapeHtml(c.message)}</span>
-          ${ c.buttonText ? `
-            <a href="${escapeHtml(c.buttonUrl)}" style="
-              display: inline-block; margin-left: 10px; padding: 4px 12px; 
-              background: rgba(255,255,255,0.2); color: inherit; text-decoration: none; border-radius: 4px; font-size: 12px;
-            ">${escapeHtml(c.buttonText)}</a>
-          ` : '' }
-        </div>
-        <button style="
-          background: none; border: none; color: inherit; font-size: 20px; cursor: pointer; padding: 0 0 0 15px;
-        " onclick="closeBanner('${c.id}', ${c.suppressDays}, this)">×</button>
-      </div>
-    `;
-    
-    target.innerHTML = html;
-  }
-
-  window.closeBanner = function(cid, days, btn) {
-    if(btn) btn.closest('.agx-speed-banner').innerHTML = '';
-    var until = Date.now() + (days * 86400000);
-    setStorage(cid + ':closedUntil', until);
+  // --- Instance ---
+  var inst = {
+    id: blockId,
+    container: container,
+    root: null,
+    placement: 'BOTTOM',
+    destroyed: false
   };
-  
+  window.__AGX_SPEED_BANNER__.instances[blockId] = inst;
+
+  // --- Env ---
+  function isMobile() { return window.innerWidth <= 768; }
+  function deviceType() { return isMobile() ? 'MOBILE' : 'DESKTOP'; }
+  function isDebug() { return /[?&]agx_debug=1(?:&|$)/.test(window.location.search); }
+  function isDesignMode() { return !!(window.Shopify && Shopify.designMode); }
+  function isPreviewMode() {
+    return isDesignMode() || /[?&](preview_theme_id|_fd|pb|theme_editor)=/.test(window.location.search);
+  }
+  function heavyAllowed() { return isDebug() || isPreviewMode(); }
+  function debugLog() {
+    if (!isDebug()) return;
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift('[AGX Debug]');
+    console.log.apply(console, args);
+  }
+
+  // --- Storage ---
+  function getStorage(key) { try { return localStorage.getItem(PREFIX + key); } catch (e) { return null; } }
+  function setStorage(key, val) { try { localStorage.setItem(PREFIX + key, val); } catch (e) {} }
+
+  // --- Security ---
   function escapeHtml(text) {
     if (!text) return '';
-    return text
+    return String(text)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   }
+  function normalizeColor(color, fallback) {
+    var s = String(color || '').replace(/\s/g, '');
+    if (!s) return fallback;
+    if (s.charAt(0) !== '#') s = '#' + s;
+    return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(s) ? s : fallback;
+  }
+  function sanitizeUrl(url) {
+    if (!url) return '#';
+    var u = String(url).trim();
+    if (u.indexOf('/') === 0) return u;                 // relative path
+    if (/^https?:\/\//i.test(u)) return u;              // http/https
+    if (/^(mailto:|tel:)/i.test(u)) return u;           // mailto/tel
+    return '#';
+  }
 
+  // --- Event ---
+  function postEvent(payload) {
+    try {
+      var url = '/apps/speed-banner/event';
+      var body = JSON.stringify(payload);
+      if (navigator.sendBeacon) {
+        var blob = new Blob([body], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+        return;
+      }
+      fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: body,
+        keepalive: true
+      }).catch(function(){});
+    } catch (e) {}
+  }
+
+  // --- Placement helpers ---
+  function findHeaderEl() {
+    var selectors = [
+      '#shopify-section-header',
+      '[id^="shopify-section-header"]',
+      'header.shopify-section',
+      'header',
+      '.header-wrapper',
+      '.header'
+    ];
+    for (var i = 0; i < selectors.length; i++) {
+      var el = document.querySelector(selectors[i]);
+      if (el) return el;
+    }
+    return null;
+  }
+  function clampBarHeight(h) {
+    if (!h || h < 0) return 0;
+    return Math.min(h, MAX_BAR_HEIGHT);
+  }
+  function isOverlayRect(rect) {
+    if (!rect) return false;
+    if (rect.height >= OVERLAY_MIN_HEIGHT) return true;
+    if (rect.height >= window.innerHeight * OVERLAY_MIN_VH) return true;
+    return false;
+  }
+  function candidateBottomOffset(el, label) {
+    try {
+      var rect = el.getBoundingClientRect();
+      if (rect.height <= 0) return 0;
+
+      // must be near bottom; tolerate subpixel/border
+      if (rect.bottom < window.innerHeight - 6) return 0;
+
+      if (isOverlayRect(rect)) {
+        debugLog('Candidate ignored as overlay:', label, rect.height);
+        return 0;
+      }
+
+      // use distance to top so banner bottom == bar top (no gap)
+      // Account for transparent padding-top (e.g., Shopify Preview Bar wrapper has 4px padding)
+      var style = window.getComputedStyle(el);
+      var pt = parseFloat(style.paddingTop) || 0;
+      var effectiveTop = rect.top + pt;
+
+      // Plan A: Use raw sub-pixel value (no Math.round/ceil) to eliminate gaps
+      var raw = Math.max(0, window.innerHeight - effectiveTop);
+      var h = clampBarHeight(raw);
+
+      if (h > 0) debugLog('Blocking candidate accepted:', label, h, 'rect.top=', rect.top, 'pt=', pt, 'effTop=', effectiveTop);
+      return h;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function calculateTopOffset(root) {
+    var headerEl = findHeaderEl();
+    if (!headerEl) return 0;
+    var h = headerEl.getBoundingClientRect().height || 0;
+    if (h > MAX_HEADER_HEIGHT) {
+      debugLog('Header height too large:', h, '-> clamped to 0');
+      return 0;
+    }
+    return h;
+  }
+
+  function calculateBottomOffset(root, inst) {
+    var bottomOffset = 0;
+    var bestEffTop = null;
+    var bestLabel = null;
+
+    // 1) Known candidates (ALWAYS overlay-reject + clamp)
+    // Expanded with robust Shopify Preview Bar detection
+    var candidates = [
+      ['#admin-bar-iframe', '#admin-bar-iframe'],
+      ['#PBarNextFrameWrapper', '#PBarNextFrameWrapper'], // New wrapper detection
+      ['#PBarNextFrame', '#PBarNextFrame'],
+      ['#preview-bar-iframe', '#preview-bar-iframe'],
+      ['#shopify-preview-bar', '#shopify-preview-bar'],
+      ['.shopify-preview-bar', '.shopify-preview-bar'],
+      ['iframe[id*="preview"]', 'iframe[id*="preview"]'],
+      ['iframe[id*="admin"]', 'iframe[id*="admin"]'],
+      // Removed duplicate #PBarNextFrame
+      ['#ShopifyPreviewBar', '#ShopifyPreviewBar'],
+      ['iframe[src*="preview_bar"]', 'iframe[src*="preview_bar"]'],
+      ['[data-shopify-preview-bar]', '[data-shopify-preview-bar]']
+    ];
+    for (var i = 0; i < candidates.length; i++) {
+      var sel = candidates[i][0];
+      var label = candidates[i][1];
+      var el = document.querySelector(sel);
+      if (!el) continue;
+      var h = candidateBottomOffset(el, label);
+      
+      if (h > bottomOffset) {
+        bottomOffset = h;
+        // Cache for debug
+        try {
+          bestLabel = label;
+          var rect = el.getBoundingClientRect();
+          var style = window.getComputedStyle(el);
+          var pt = parseFloat(style.paddingTop) || 0;
+          bestEffTop = rect.top + pt;
+        } catch(e) {}
+      }
+    }
+
+    // 2) Heavy iframe scan only in debug/designMode AND only if still 0
+    if (bottomOffset === 0 && heavyAllowed()) {
+      var iframes = document.querySelectorAll('iframe');
+      for (var j = 0; j < iframes.length; j++) {
+        var fr = iframes[j].getBoundingClientRect();
+        if (fr.height <= 0) continue;
+        if (fr.bottom >= window.innerHeight - 2 && fr.top > window.innerHeight / 2 && fr.width > window.innerWidth * 0.8) {
+          if (isOverlayRect(fr)) {
+            debugLog('Iframe ignored as overlay:', iframes[j].id || '(no-id)', fr.height);
+            continue;
+          }
+          var h2 = clampBarHeight(fr.height);
+          if (h2 > bottomOffset) {
+             bottomOffset = h2;
+             // We don't strictly cache effTop for heavy scan as primary requested usecase is Known Candidates
+          }
+        }
+      }
+    }
+
+    // 3) X-Ray only in debug/designMode AND only if still 0
+    if (bottomOffset === 0 && heavyAllowed()) {
+      var probeX = window.innerWidth / 2;
+      var probeY = window.innerHeight - 10;
+      var mutated = [];
+      try {
+        for (var depth = 0; depth < XRAY_MAX_DEPTH; depth++) {
+          var hit = document.elementFromPoint(probeX, probeY);
+          if (!hit || hit === document.documentElement || hit === document.body || (root && root.contains(hit))) break;
+
+          var rect = hit.getBoundingClientRect();
+          var cs = window.getComputedStyle(hit);
+          var fixedish = (cs.position === 'fixed' || cs.position === 'sticky' || hit.tagName === 'IFRAME');
+
+          // overlay => make transparent to hit-testing by pointer-events
+          if (isOverlayRect(rect)) {
+            debugLog('X-Ray drilling overlay:', hit.id || hit.tagName, rect.height);
+            mutated.push({ el: hit, prev: hit.style.pointerEvents });
+            hit.style.pointerEvents = 'none';
+            continue;
+          }
+
+          if (fixedish) {
+            var visualHeight = Math.max(0, window.innerHeight - rect.top);
+            var h = clampBarHeight(visualHeight);
+            bottomOffset = Math.max(bottomOffset, h);
+            debugLog('X-Ray fixed bar found:', hit.id || hit.tagName, 'h=', h);
+          }
+          break;
+        }
+      } finally {
+        for (var k = 0; k < mutated.length; k++) {
+          mutated[k].el.style.pointerEvents = mutated[k].prev;
+        }
+      }
+    }
+    
+    // Save to instance for debug gap check
+    if (inst) {
+      inst._lastBottomOffset = bottomOffset;
+      inst._lastEffTop = (bestEffTop !== null && typeof bestEffTop === 'number' && isFinite(bestEffTop)) ? bestEffTop : null;
+      inst._lastCandidateLabel = bestLabel;
+    }
+
+    return bottomOffset;
+  }
+
+  function applyPlacement(root, placement, instArg) {
+    if (!root) return;
+    var it = instArg || inst; 
+    root.style.top = '';
+    root.style.bottom = '';
+    if (placement === 'TOP') {
+      var top = calculateTopOffset(root);
+      root.style.top = top + 'px';
+      debugLog('Applied Top Offset:', top);
+      return;
+    }
+    var bottom = calculateBottomOffset(root, it);
+    root.style.bottom = bottom + 'px';
+    debugLog('Applied Bottom Offset:', bottom);
+
+    if (isDebug()) {
+      requestAnimationFrame(function () {
+        try {
+          if (!root || !document.body.contains(root)) return;
+          var r = root.getBoundingClientRect();
+          
+          // Use cached values from inst
+          if (it && it._lastEffTop !== null && it._lastEffTop !== undefined) {
+             var gap = it._lastEffTop - r.bottom;
+             debugLog('GapCheck: candidate=' + (it._lastCandidateLabel || 'unknown') + 
+                      ' effTop=' + it._lastEffTop.toFixed(2) + 
+                      ' bannerBottom=' + r.bottom.toFixed(2) + 
+                      ' gap=' + gap.toFixed(2));
+          } else {
+             debugLog('GapCheck skipped (no candidate)');
+          }
+        } catch (e) {
+          console.error('[AGX Debug] Gap check failed', e);
+        }
+      });
+    }
+  }
+
+  // --- Global resize: bind once, update all instances ---
+  function bindGlobalResizeOnce() {
+    if (window.__AGX_SPEED_BANNER__.resizeBound) return;
+    window.__AGX_SPEED_BANNER__.resizeBound = true;
+
+    var ticking = false;
+    window.addEventListener('resize', function () {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(function () {
+        try {
+          var reg = window.__AGX_SPEED_BANNER__ && window.__AGX_SPEED_BANNER__.instances;
+          for (var key in reg) {
+            if (!reg.hasOwnProperty(key)) continue;
+            var it = reg[key];
+            if (!it || it.destroyed) continue;
+            if (!it.root || !document.body.contains(it.root)) continue;
+            applyPlacement(it.root, it.placement, it);
+          }
+        } catch (e) {}
+        ticking = false;
+      });
+    });
+  }
+
+  function destroy() {
+    inst.destroyed = true;
+    try { inst.container.innerHTML = ''; } catch (e) {}
+    delete window.__AGX_SPEED_BANNER__.instances[inst.id];
+  }
+
+  // --- Render ---
+  function renderBanner(c) {
+    var placement = (c.placement === 'TOP') ? 'TOP' : 'BOTTOM';
+    inst.placement = placement;
+
+    var style = c.style || {};
+    var bg = normalizeColor(style.backgroundColor, '#000000');
+    var txt = normalizeColor(style.textColor, '#ffffff');
+
+    var safeArea = (placement === 'BOTTOM')
+      ? 'padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));'
+      : 'padding-top: calc(10px + env(safe-area-inset-top, 0px));';
+
+    var message = escapeHtml(c.message);
+    var buttonText = c.buttonText ? escapeHtml(c.buttonText) : '';
+    var buttonUrl = sanitizeUrl(c.buttonUrl);
+
+    var html = ''
+      + '<div data-agx-banner-root="1" style="'
+      + 'position:fixed;left:0;right:0;z-index:2147483647;'
+      + 'background-color:' + bg + ';color:' + txt + ';'
+      + 'box-shadow:0 2px 10px rgba(0,0,0,0.1);'
+      + 'display:flex;justify-content:space-between;align-items:center;'
+      + 'padding:10px 20px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;'
+      + safeArea
+      + '">'
+      + '  <div style="flex:1;text-align:center;">'
+      + '    <span>' + message + '</span>'
+      + (buttonText ? (
+          '    <a data-agx-cta="1" href="' + escapeHtml(buttonUrl) + '" style="'
+          + 'display:inline-block;margin-left:10px;padding:4px 12px;'
+          + 'background:rgba(255,255,255,0.2);color:inherit;text-decoration:none;border-radius:4px;font-size:12px;'
+          + '">' + buttonText + '</a>'
+        ) : '')
+      + '  </div>'
+      + '  <button data-agx-close="1" style="background:none;border:none;color:inherit;font-size:20px;cursor:pointer;padding:0 0 0 15px;">×</button>'
+      + '</div>';
+
+    inst.container.innerHTML = html;
+    var root = inst.container.querySelector('[data-agx-banner-root="1"]');
+    if (!root) return;
+
+    inst.root = root;
+
+    // placement + resize
+    // placement + resize
+    applyPlacement(root, placement, inst);
+    bindGlobalResizeOnce();
+
+    // close
+    var closeBtn = inst.container.querySelector('[data-agx-close="1"]');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        try { root.remove(); } catch (e) { inst.container.innerHTML = ''; }
+        var days = Math.max(0, Math.min(365, parseInt(c.suppressDays || 0, 10) || 0));
+        var until = Date.now() + (days * 86400000);
+        setStorage(c.id + ':closedUntil', until);
+        destroy();
+      });
+    }
+
+    // click
+    var cta = inst.container.querySelector('[data-agx-cta="1"]');
+    if (cta) {
+      cta.addEventListener('click', function () {
+        postEvent({ type: 'click', id: c.id });
+      });
+    }
+
+    // retries only for heavyAllowed + BOTTOM (async bars)
+    if (heavyAllowed() && placement === 'BOTTOM') {
+      var delays = [500, 1000, 2000];
+      for (var i = 0; i < delays.length; i++) {
+        (function (d) {
+          setTimeout(function () {
+            if (inst.destroyed) return;
+            if (!inst.root || !document.body.contains(inst.root)) return;
+            applyPlacement(inst.root, inst.placement, inst);
+          }, d);
+        })(delays[i]);
+      }
+    }
+
+    if (isDebug()) {
+      setTimeout(function () {
+        if (!inst.root) return;
+        var r = inst.root.getBoundingClientRect();
+        console.log('[AGX Debug] Final Rect:', r.top, r.bottom, r.height);
+      }, 2100);
+    }
+  }
+
+  // --- Main ---
+  function run() {
+    var ep = '/apps/speed-banner/public-config?path=' + encodeURIComponent(window.location.pathname) + '&device=' + deviceType();
+    fetch(ep)
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        debugLog('API Response:', data);
+        if (!data || !data.campaign) return;
+
+        var c = data.campaign;
+
+        // frequency cap
+        var now = Date.now();
+        var shownKey = c.id + ':shownAt';
+        var closedKey = c.id + ':closedUntil';
+
+        var lastShown = parseInt(getStorage(shownKey) || '0', 10);
+        var closedUntil = parseInt(getStorage(closedKey) || '0', 10);
+
+        if (now < closedUntil) { debugLog('Suppressed by close:', closedUntil); return; }
+        if (c.frequency === 'FIRST' && lastShown > 0) return;
+        if (c.frequency === 'H24' && (now - lastShown) < 86400000) return;
+        if (c.frequency === 'D7' && (now - lastShown) < 604800000) return;
+
+        renderBanner(c);
+
+        setStorage(shownKey, now);
+        postEvent({ type: 'impression', id: c.id });
+      })
+      .catch(function (e) {
+        if (isDebug()) console.debug('Banner fetch failed', e);
+      });
+  }
+
+  run();
 })();
 </script>

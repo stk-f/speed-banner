@@ -6,9 +6,9 @@
 **症状**: `npm run dev` 起動時に `Error code: P1012` や `schema validation` エラーが出る。
 **原因**: プロジェクトの dependencies にある Prisma (`^6.x`) と、`npx` がダウンロードする最新の Prisma (`7.x`など) でバージョン不整合が起きるため。
 **対策**:
-- `shopify.web.toml` や `package.json` のスクリプトでは、**`npm run prisma --`** (または `npm exec prisma --`) を使用する。
+- `shopify.web.toml` や `package.json` のスクリプトでは、**`npm exec prisma`** を使用する。
 - `npx` (特に `--no-install` 無し) は環境によって最新版を勝手にダウンロードしてしまうリスクがあるため避ける。
-- 推奨コマンド例: `npm run prisma -- generate`
+- 推奨コマンド例: `npm exec prisma generate`
 
 ### 2. Prisma Import Error (500 Internal Server Error)
 **症状**: `/api/*` エンドポイントにアクセスすると 500 エラーが発生。ログに `Cannot read properties of undefined (reading 'Client')` などが出る。
@@ -42,5 +42,26 @@
    curl -v http://localhost:PORT/api/public-config
    ```
    - 期待値: `401 Unauthorized` (正常に動作し、認証で弾かれている)
-   - NG: `404 Not Found` (ルート設定ミス)
-   - NG: `500 Internal Server Error` (DB接続やImportミス)
+### 3. 文字化け (Mojibake)
+**症状**: ログの日本語が `縺ゅ≠` のように文字化けする。
+**原因**: Windows PowerShell のデフォルトエンコーディングが Shift-JIS (cp932) であり、Node.js/Shopify CLI の UTF-8 出力と不整合が起きるため。
+**対策**:
+プロファイル (`$PROFILE`) に以下を追記して、UTF-8 を強制する。
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+```
+
+### 4. Port Conflict (EADDRINUSE 9293)
+**症状**: `npm run dev` 起動時に `Error: listen EADDRINUSE ... :9293` が出る。
+**原因**: 前回の `npm run dev` プロセスが正常終了せず、ポートを占有したまま残っている(ゾンビプロセス)。
+**対策**:
+1. ポートを使用しているプロセスPIDを特定:
+   ```powershell
+   netstat -ano | findstr :9293
+   ```
+2. そのプロセスを強制終了:
+   ```powershell
+   taskkill /F /PID <PID>
+   ```
+3. 再発防止: 開発終了時は必ず `q` キーでCLIを終了させる。Ctrl+Cだとプロセスが残る場合がある。

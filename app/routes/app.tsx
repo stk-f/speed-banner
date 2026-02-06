@@ -1,3 +1,4 @@
+import { redirect } from "@remix-run/node";
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
@@ -5,12 +6,22 @@ import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 
-import { authenticate } from "../shopify.server";
+import { authenticate, MONTHLY_PLAN, ANNUAL_PLAN } from "../shopify.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
+// app/routes/app.tsx
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { billing } = await authenticate.admin(request); // billing is available here
+
+  // Require billing
+  await billing.require({
+    plans: [MONTHLY_PLAN, ANNUAL_PLAN],
+    isTest: process.env.SHOPIFY_BILLING_TEST === "true",
+    onFailure: async () => {
+      throw redirect("/app/select-plan");
+    },
+  });
 
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
 };

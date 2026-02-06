@@ -45,3 +45,15 @@ prisma/*.db-journal
 
 # Temporary
 **/tmp/
+# Playwright artifacts
+playwright-report/
+test-results/
+
+# Local automation / browser data
+.puppeteer_data/
+
+# Local logs
+start_log*.txt
+test_output*.txt
+test_result*.txt
+lint_report*.txt

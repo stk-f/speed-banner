@@ -65,7 +65,7 @@ async function getHighestPriorityCampaign(shopDomain: string, path: string, devi
 
 export async function loader({ request }: LoaderFunctionArgs) {
     try {
-        const { session, admin } = await authenticate.public.appProxy(request);
+        const { session } = await authenticate.public.appProxy(request);
 
         if (!session || !session.shop) {
             return json({ error: "Unauthorized" }, { status: 401 });

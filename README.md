@@ -43,6 +43,16 @@ npm install -g @shopify/cli@latest
 shopify app init --template=https://github.com/Shopify/shopify-app-template-remix
 ```
 
+### Local Development configuration (.env)
+
+```env
+SHOPIFY_API_KEY=your_api_key
+SHOPIFY_API_SECRET=your_api_secret
+SHOPIFY_APP_URL=https://your-ngrok-url.io
+SCOPES=write_products,write_content # Minimal scopes for banner management
+SHOPIFY_BILLING_TEST=true # Set to true to test billing in development
+```
+
 ### Local Development
 
 ```shell
@@ -88,6 +98,32 @@ This template comes preconfigured with examples of:
 3. Responding to webhooks in individual files such as [/app/routes/webhooks.app.uninstalled.tsx](https://github.com/Shopify/shopify-app-template-remix/blob/main/app/routes/webhooks.app.uninstalled.tsx) and [/app/routes/webhooks.app.scopes_update.tsx](https://github.com/Shopify/shopify-app-template-remix/blob/main/app/routes/webhooks.app.scopes_update.tsx)
 
 Please read the [documentation for @shopify/shopify-app-remix](https://www.npmjs.com/package/@shopify/shopify-app-remix#authenticating-admin-requests) to understand what other API's are available.
+
+## Phase 4: Billing Preparation Checklist
+
+> [!IMPORTANT]
+> **Before enabling Billing**:
+> 1. [ ] Update `shopify.app.toml` with the production `application_url`.
+> 2. [ ] Update `redirect_urls` to match the production domain.
+> 3. [ ] Run `npm run deploy` to push the config to Shopify.
+
+### Manual Verification Steps (Billing)
+1. **Initial Access**:
+   - Set `SHOPIFY_BILLING_TEST=true` in `.env`.
+   - Start app with `npm run dev`.
+   - Navigate to `/app`.
+   - Verify redirection to `/app/select-plan`.
+
+2. **Select Plan**:
+   - Click "Select Monthly" ($9/mo).
+   - Approve the test charge in Shopify.
+   - Verify redirection back to `/app`.
+   - **Check Dashboard**: Expected "Current Plan: Monthly Subscription".
+
+3. **Annual Plan**:
+   - (Optional) Re-install or cancel subscription to test Annual flow.
+   - Select "Select Annual" ($90/yr).
+   - Verify charge amount and "Current Plan: Annual Subscription".
 
 ## Deployment
 
