@@ -14,14 +14,17 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { billing } = await authenticate.admin(request); // billing is available here
 
-  // Require billing
-  await billing.require({
-    plans: [MONTHLY_PLAN, ANNUAL_PLAN],
-    isTest: process.env.SHOPIFY_BILLING_TEST === "true",
-    onFailure: async () => {
-      throw redirect("/app/select-plan");
-    },
-  });
+  const url = new URL(request.url);
+  if (url.pathname !== "/app/select-plan") {
+    // Require billing
+    await billing.require({
+      plans: [MONTHLY_PLAN, ANNUAL_PLAN],
+      isTest: process.env.SHOPIFY_BILLING_TEST === "true",
+      onFailure: async () => {
+        throw redirect("/app/select-plan");
+      },
+    });
+  }
 
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
 };

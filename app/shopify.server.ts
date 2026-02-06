@@ -8,8 +8,8 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
-export const MONTHLY_PLAN = "Monthly Subscription";
-export const ANNUAL_PLAN = "Annual Subscription";
+export const MONTHLY_PLAN = "Monthly Subscription" as const;
+export const ANNUAL_PLAN = "Annual Subscription" as const;
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -31,7 +31,6 @@ const shopify = shopifyApp({
           amount: 9,
           currencyCode: "USD",
           interval: BillingInterval.Every30Days,
-          // @ts-ignore
           trialDays: 30,
         },
       ],
@@ -42,7 +41,6 @@ const shopify = shopifyApp({
           amount: 90,
           currencyCode: "USD",
           interval: BillingInterval.Annual,
-          // @ts-ignore
           trialDays: 30,
         },
       ],
