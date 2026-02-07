@@ -12,7 +12,13 @@ import {
   useIndexResourceState,
   List,
 } from "@shopify/polaris";
-import { authenticate, MONTHLY_PLAN, ANNUAL_PLAN } from "../shopify.server";
+import {
+  authenticate,
+  MONTHLY_PLAN,
+  ANNUAL_PLAN,
+  DISPLAY_PLAN_MONTHLY,
+  DISPLAY_PLAN_ANNUAL
+} from "../shopify.server";
 import prisma from "../db.server";
 
 // Helper for CTR calculation
@@ -34,9 +40,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
     if (billingCheck.hasActivePayment) {
       const activeName = billingCheck.appSubscriptions[0].name;
-      if (activeName === MONTHLY_PLAN) currentPlan = "Monthly Subscription";
-      else if (activeName === ANNUAL_PLAN) currentPlan = "Annual Subscription";
-      else currentPlan = activeName; // Fallback
+      if (activeName === MONTHLY_PLAN || activeName === DISPLAY_PLAN_MONTHLY) {
+        currentPlan = DISPLAY_PLAN_MONTHLY;
+      } else if (activeName === ANNUAL_PLAN || activeName === DISPLAY_PLAN_ANNUAL) {
+        currentPlan = DISPLAY_PLAN_ANNUAL;
+      } else {
+        currentPlan = activeName; // Fallback
+      }
     }
   } catch (e) {
     console.error("Billing check failed", e);
