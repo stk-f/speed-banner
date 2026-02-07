@@ -58,6 +58,7 @@ export default function SelectPlan() {
     const isSubmitting = nav.state === "submitting";
 
     const handleSelect = (plan: string) => {
+        if (isSubmitting) return;
         submit({ plan }, { method: "POST" });
     };
 
@@ -107,6 +108,7 @@ export default function SelectPlan() {
                                     variant="primary"
                                     onClick={() => handleSelect(MONTHLY_PLAN)}
                                     loading={isSubmitting}
+                                    disabled={isSubmitting}
                                 >
                                     Select Monthly
                                 </Button>
@@ -136,6 +138,7 @@ export default function SelectPlan() {
                                 <Button
                                     onClick={() => handleSelect(ANNUAL_PLAN)}
                                     loading={isSubmitting}
+                                    disabled={isSubmitting}
                                 >
                                     Select Annual
                                 </Button>

@@ -33,7 +33,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       isTest: process.env.SHOPIFY_BILLING_TEST === "true",
     });
     if (billingCheck.hasActivePayment) {
-      currentPlan = billingCheck.appSubscriptions[0].name;
+      const activeName = billingCheck.appSubscriptions[0].name;
+      if (activeName === MONTHLY_PLAN) currentPlan = "Monthly Subscription";
+      else if (activeName === ANNUAL_PLAN) currentPlan = "Annual Subscription";
+      else currentPlan = activeName; // Fallback
     }
   } catch (e) {
     console.error("Billing check failed", e);
