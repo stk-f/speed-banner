@@ -10,8 +10,15 @@ import {
   IndexTable,
   LegacyCard,
   useIndexResourceState,
+  List,
 } from "@shopify/polaris";
-import { authenticate, MONTHLY_PLAN, ANNUAL_PLAN } from "../shopify.server";
+import { authenticate } from "../shopify.server";
+import {
+  MONTHLY_PLAN,
+  ANNUAL_PLAN,
+  DISPLAY_PLAN_MONTHLY,
+  DISPLAY_PLAN_ANNUAL
+} from "../constants";
 import prisma from "../db.server";
 
 // Helper for CTR calculation
@@ -32,7 +39,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       isTest: process.env.SHOPIFY_BILLING_TEST === "true",
     });
     if (billingCheck.hasActivePayment) {
-      currentPlan = billingCheck.appSubscriptions[0].name;
+      const activeName = billingCheck.appSubscriptions[0].name;
+      if (activeName === MONTHLY_PLAN || activeName === DISPLAY_PLAN_MONTHLY) {
+        currentPlan = DISPLAY_PLAN_MONTHLY;
+      } else if (activeName === ANNUAL_PLAN || activeName === DISPLAY_PLAN_ANNUAL) {
+        currentPlan = DISPLAY_PLAN_ANNUAL;
+      } else {
+        currentPlan = activeName; // Fallback
+      }
     }
   } catch (e) {
     console.error("Billing check failed", e);
@@ -147,6 +161,28 @@ export default function Index() {
               <BlockStack gap="200">
                 <Text as="h2" variant="headingMd">Current Plan</Text>
                 <Text as="p" variant="bodyMd">{currentPlan}</Text>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        </Layout>
+
+        {/* 3-Step Value Checklist */}
+        <Layout>
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h2" variant="headingMd">Get value in 3 steps (5 min)</Text>
+                <List type="number">
+                  <List.Item>
+                    <Text as="span" fontWeight="bold">Create a campaign</Text> - Create your first campaign from this dashboard.
+                  </List.Item>
+                  <List.Item>
+                    <Text as="span" fontWeight="bold">Add 'Banner Block' in Theme Editor</Text> - Go to your Shopify Admin &gt; Online Store &gt; Themes &gt; Customize.
+                  </List.Item>
+                  <List.Item>
+                    <Text as="span" fontWeight="bold">Open your storefront</Text> - Reload once to register an impression (per session) and confirm analytics below.
+                  </List.Item>
+                </List>
               </BlockStack>
             </Card>
           </Layout.Section>

@@ -7,9 +7,14 @@ import {
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
+import {
+  PLAN_MONTHLY,
+  PLAN_ANNUAL,
+  MONTHLY_PLAN,
+  ANNUAL_PLAN
+} from "./constants";
 
-export const MONTHLY_PLAN = "Monthly Subscription" as const;
-export const ANNUAL_PLAN = "Annual Subscription" as const;
+export { MONTHLY_PLAN, ANNUAL_PLAN, PLAN_MONTHLY, PLAN_ANNUAL };
 
 export type Plan = "FREE" | "TRIAL" | "PAID";
 

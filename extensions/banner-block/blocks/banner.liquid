@@ -431,9 +431,10 @@
 
     // --- Phase 5: Impression Tracking ---
     try {
-      // Deduplication: 1 session 1 time (using localStorage as requested)
+      // Deduplication: Session scope (using sessionStorage)
       var impKey = 'agx_imp_' + c.id;
-      var alreadyImp = getStorage(impKey);
+      var alreadyImp = false;
+      try { alreadyImp = sessionStorage.getItem(impKey); } catch(e){}
       
       if (!alreadyImp) {
         if ('IntersectionObserver' in window) {
@@ -441,7 +442,7 @@
             entries.forEach(function(entry) {
               if (entry.isIntersecting) {
                 postEvent({ type: 'impression', campaignId: c.id });
-                setStorage(impKey, '1');
+                try { sessionStorage.setItem(impKey, '1'); } catch(e){}
                 obs.disconnect();
               }
             });
@@ -450,7 +451,7 @@
         } else {
           // Fallback
           postEvent({ type: 'impression', campaignId: c.id });
-          setStorage(impKey, '1');
+          try { sessionStorage.setItem(impKey, '1'); } catch(e){}
         }
       }
     } catch (e) {

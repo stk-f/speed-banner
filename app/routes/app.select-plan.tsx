@@ -10,8 +10,10 @@ import {
     Text,
     InlineGrid,
     Box,
+    List,
 } from "@shopify/polaris";
-import { authenticate, MONTHLY_PLAN, ANNUAL_PLAN } from "../shopify.server";
+import { authenticate } from "../shopify.server";
+import { MONTHLY_PLAN, ANNUAL_PLAN } from "../constants";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { billing } = await authenticate.admin(request);
@@ -41,10 +43,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: "Invalid plan" }, { status: 400 });
     }
 
+    const origin = process.env.SHOPIFY_APP_URL ?? new URL(request.url).origin;
     await billing.request({
         plan: plan === MONTHLY_PLAN ? MONTHLY_PLAN : ANNUAL_PLAN,
         isTest: process.env.SHOPIFY_BILLING_TEST === "true",
-        returnUrl: `${process.env.SHOPIFY_APP_URL}/app`,
+        returnUrl: new URL("/app", origin).toString(),
     });
 
     return null;
@@ -56,12 +59,35 @@ export default function SelectPlan() {
     const isSubmitting = nav.state === "submitting";
 
     const handleSelect = (plan: string) => {
+        if (isSubmitting) return;
         submit({ plan }, { method: "POST" });
     };
 
     return (
         <Page title="Select a Plan">
             <Layout>
+                <Layout.Section>
+                    <Card>
+                        <BlockStack gap="400">
+                            <Text as="h2" variant="headingMd">What you get</Text>
+                            <List>
+                                <List.Item>Speed-first banner (minimal JS, avoids CLS/LCP issues)</List.Item>
+                                <List.Item>Impression & click tracking</List.Item>
+                                <List.Item>Last 30 days dashboard report</List.Item>
+                            </List>
+                            <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                                <BlockStack gap="200">
+                                    <Text as="p" variant="bodySm">
+                                        Start with a <strong>30-day free trial</strong>. You can cancel anytime from Shopify admin (Apps &gt; App and sales channels).
+                                    </Text>
+                                    <Text as="p" variant="bodySm" tone="subdued">
+                                        No charges during the trial.
+                                    </Text>
+                                </BlockStack>
+                            </Box>
+                        </BlockStack>
+                    </Card>
+                </Layout.Section>
                 <Layout.Section>
                     <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
                         {/* Monthly Plan */}
@@ -83,6 +109,7 @@ export default function SelectPlan() {
                                     variant="primary"
                                     onClick={() => handleSelect(MONTHLY_PLAN)}
                                     loading={isSubmitting}
+                                    disabled={isSubmitting}
                                 >
                                     Select Monthly
                                 </Button>
@@ -112,6 +139,7 @@ export default function SelectPlan() {
                                 <Button
                                     onClick={() => handleSelect(ANNUAL_PLAN)}
                                     loading={isSubmitting}
+                                    disabled={isSubmitting}
                                 >
                                     Select Annual
                                 </Button>
