@@ -46,8 +46,8 @@ shopify app init --template=https://github.com/Shopify/shopify-app-template-remi
 ### Local Development configuration (.env)
 
 ```env
-SHOPIFY_API_KEY=your_api_key
-SHOPIFY_API_SECRET=your_api_secret
+SHOPIFY_API_KEY=***set-in-env***
+SHOPIFY_API_SECRET=***set-in-env***
 SHOPIFY_APP_URL=https://your-ngrok-url.io
 SCOPES=write_products,write_content # Minimal scopes for banner management
 SHOPIFY_BILLING_TEST=true # Set to true to test billing in development
