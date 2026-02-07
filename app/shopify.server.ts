@@ -58,7 +58,7 @@ const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.January25,
-  scopes: process.env.SCOPES?.split(","),
+  scopes: (process.env.SCOPES || "read_themes").split(","),
   appUrl: process.env.SHOPIFY_APP_URL || "https://speedbanner.app",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),

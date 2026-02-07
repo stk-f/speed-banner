@@ -10,12 +10,12 @@ These instructions outline how to verify the functionality of Speed Banner and c
 3.  **Approval**: Approve the subscription (30-day trial).
 4.  **Dashboard**: You should land on the main Dashboard (`/app`).
     *   Verify the **"Current Plan"** card shows your selected plan.
-    *   Verify the **"Impression / Click"** charts are visible (empty initially).
+    *   Verify the **"Analytics Cards"** (Impressions/Clicks) are visible.
 
 ## 2. Banner Creation & Display
 
 1.  **Create Campaign**:
-    *   Click **"Create New Campaign"**.
+    *   Click **"Create campaign"** (primary button on Dashboard) or go to **Campaigns**.
     *   Fill in:
         *   Title: `Test Banner`
         *   Message: `Hello Reviewer`

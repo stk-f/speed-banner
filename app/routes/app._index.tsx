@@ -151,7 +151,7 @@ export default function Index() {
   );
 
   return (
-    <Page title="Dashboard">
+    <Page title="Dashboard" primaryAction={{ content: "Create campaign", url: "/app/campaigns/new" }}>
       <BlockStack gap="500">
 
         {/* Billing Info */}
@@ -174,7 +174,7 @@ export default function Index() {
                 <Text as="h2" variant="headingMd">Get value in 3 steps (5 min)</Text>
                 <List type="number">
                   <List.Item>
-                    <Text as="span" fontWeight="bold">Create a campaign</Text> - Create your first campaign from this dashboard.
+                    <Text as="span" fontWeight="bold">Create a campaign</Text> - Use the "Create campaign" button (top right) to set up your banner.
                   </List.Item>
                   <List.Item>
                     <Text as="span" fontWeight="bold">Add 'Banner Block' in Theme Editor</Text> - Go to your Shopify Admin &gt; Online Store &gt; Themes &gt; Customize.
