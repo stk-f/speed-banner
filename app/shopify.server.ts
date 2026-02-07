@@ -7,21 +7,14 @@ import {
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
+import {
+  PLAN_MONTHLY,
+  PLAN_ANNUAL,
+  MONTHLY_PLAN,
+  ANNUAL_PLAN
+} from "./constants";
 
-// Internal Immutable Keys
-export const PLAN_MONTHLY = "plan_monthly" as const;
-export const PLAN_ANNUAL = "plan_annual" as const;
-
-// Display Names (Optional, for UI if needed, though we can map)
-export const DISPLAY_PLAN_MONTHLY = "Monthly Subscription";
-export const DISPLAY_PLAN_ANNUAL = "Annual Subscription";
-
-// Retain old export names for compatibility but mapped to NEW KEYS if billing config uses them
-// OR if we update the billing config to use these new keys.
-// User instruction: "billing設定は [PLAN_MONTHLY], [PLAN_ANNUAL] をキーにする"
-// So I will update billing config to use these keys.
-export const MONTHLY_PLAN = PLAN_MONTHLY;
-export const ANNUAL_PLAN = PLAN_ANNUAL;
+export { MONTHLY_PLAN, ANNUAL_PLAN, PLAN_MONTHLY, PLAN_ANNUAL };
 
 export type Plan = "FREE" | "TRIAL" | "PAID";
 

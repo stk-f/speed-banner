@@ -12,7 +12,8 @@ import {
     Box,
     List,
 } from "@shopify/polaris";
-import { authenticate, MONTHLY_PLAN, ANNUAL_PLAN } from "../shopify.server";
+import { authenticate } from "../shopify.server";
+import { MONTHLY_PLAN, ANNUAL_PLAN } from "../constants";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { billing } = await authenticate.admin(request);

@@ -12,13 +12,13 @@ import {
   useIndexResourceState,
   List,
 } from "@shopify/polaris";
+import { authenticate } from "../shopify.server";
 import {
-  authenticate,
   MONTHLY_PLAN,
   ANNUAL_PLAN,
   DISPLAY_PLAN_MONTHLY,
   DISPLAY_PLAN_ANNUAL
-} from "../shopify.server";
+} from "../constants";
 import prisma from "../db.server";
 
 // Helper for CTR calculation
