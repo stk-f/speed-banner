@@ -161,13 +161,13 @@ export default function Index() {
                 <Text as="h2" variant="headingMd">Get value in 3 steps (5 min)</Text>
                 <List type="number">
                   <List.Item>
-                    <Text as="span" fontWeight="bold">Create a campaign</Text> - Use the "Create New Campaign" button below.
+                    <Text as="span" fontWeight="bold">Create a campaign</Text> - Create your first campaign from this dashboard.
                   </List.Item>
                   <List.Item>
                     <Text as="span" fontWeight="bold">Add 'Banner Block' in Theme Editor</Text> - Go to your Shopify Admin &gt; Online Store &gt; Themes &gt; Customize.
                   </List.Item>
                   <List.Item>
-                    <Text as="span" fontWeight="bold">Open your storefront</Text> - Reload once to register an impression (session-scoped) and confirm analytics below.
+                    <Text as="span" fontWeight="bold">Open your storefront</Text> - Reload once to register an impression (per session) and confirm analytics below.
                   </List.Item>
                 </List>
               </BlockStack>

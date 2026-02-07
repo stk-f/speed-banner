@@ -42,10 +42,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: "Invalid plan" }, { status: 400 });
     }
 
+    const origin = process.env.SHOPIFY_APP_URL ?? new URL(request.url).origin;
     await billing.request({
         plan: plan === MONTHLY_PLAN ? MONTHLY_PLAN : ANNUAL_PLAN,
         isTest: process.env.SHOPIFY_BILLING_TEST === "true",
-        returnUrl: `${process.env.SHOPIFY_APP_URL}/app`,
+        returnUrl: new URL("/app", origin).toString(),
     });
 
     return null;
