@@ -1,59 +1,22 @@
-
-# System & Logs
-.DS_Store
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Dependencies
-node_modules
-.pnpm-store
-
-# Environment & Secrets (CRITICAL)
+node_modules/
 .env
 .env.*
 !.env.example
-
-# Build & Cache
+.DS_Store
 dist/
 build/
-.cache/
-.turbo/
-.next/
 coverage/
-
-# Shopify App
-.shopify/*
-.shopify.lock
-/app/build
-/public/build/
-/public/_dev
-/app/public/build
-/extensions/*/dist
-
-# Database (SQLite)
-database.sqlite
-prisma/*.db
-prisma/*.db-journal
-/prisma/dev.sqlite
-/prisma/dev.sqlite-journal
-
-# IDE
-.vscode/
-.idea/
-
-# Temporary
-**/tmp/
-# Playwright artifacts
+.shopify/
+*.logs
+*.log
+*.zip
+*.tar.gz
+artifacts/
 playwright-report/
 test-results/
-
-# Local automation / browser data
-.puppeteer_data/
-
-# Local logs
-start_log*.txt
 test_output*.txt
-test_result*.txt
-lint_report*.txt
+start_log*.txt
+build_log*.txt
+lint_*.txt
+*.pem
+*.key
