@@ -84,6 +84,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             },
         });
 
+        if (process.env.NODE_ENV !== "production") {
+            console.log(`[AGX event saved] type=${type} campaignId=${campaignId} shop=${shop}`);
+        }
+
         return json({}, { status: 200 });
 
     } catch (error) {

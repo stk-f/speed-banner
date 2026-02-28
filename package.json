@@ -4,6 +4,7 @@
   "scripts": {
     "backup": "node scripts/backup.cjs",
     "scan:secrets": "node scripts/scan-secrets.cjs",
+    "postinstall": "prisma generate",
     "build": "remix vite:build",
     "dev": "shopify app dev",
     "config:link": "shopify app config link",

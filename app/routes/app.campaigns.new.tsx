@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { json, redirect } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { useSubmit, useNavigation } from "@remix-run/react";
+import { useSubmit, useNavigation, useActionData } from "@remix-run/react";
 import {
     Page,
     Layout,
@@ -15,59 +15,63 @@ import {
     Text,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { createCampaign } from "../models/campaign.server";
+import {
+    createCampaign,
+    validateCampaignInput,
+    type CampaignValidationErrors,
+} from "../models/campaign.server";
 
 export async function action({ request }: ActionFunctionArgs) {
     const { session } = await authenticate.admin(request);
     const formData = await request.formData();
 
-    const title = formData.get("title") as string;
-    const message = formData.get("message") as string;
-    const placement = formData.get("placement") as string;
-    const priority = Number(formData.get("priority") || 0);
-    const enabled = formData.get("enabled") === "true";
-    const buttonText = formData.get("buttonText") as string;
-    const buttonUrl = formData.get("buttonUrl") as string;
+    const title      = (formData.get("title")      as string) ?? "";
+    const message    = (formData.get("message")    as string) ?? "";
+    const placement  = (formData.get("placement")  as string) ?? "";
+    const priorityRaw = (formData.get("priority")  as string) ?? "0";
+    const enabled    = formData.get("enabled") === "true";
+    const buttonText = (formData.get("buttonText") as string) ?? "";
+    const buttonUrl  = (formData.get("buttonUrl")  as string) ?? "";
 
-    // Style
-    const backgroundColor = formData.get("style_backgroundColor") as string;
-    const textColor = formData.get("style_textColor") as string;
-    const styleJson = JSON.stringify({ backgroundColor, textColor });
+    const backgroundColor = (formData.get("style_backgroundColor") as string) ?? "#000000";
+    const textColor       = (formData.get("style_textColor")       as string) ?? "#ffffff";
+    const styleJson       = JSON.stringify({ backgroundColor, textColor });
 
-    // Rule
-    const pageScope = formData.get("rule_pageScope") as string;
-    const urlPrefix = formData.get("rule_urlPrefix") as string;
-    const device = formData.get("rule_device") as string;
-    const frequency = formData.get("rule_frequency") as string;
+    const pageScope  = (formData.get("rule_pageScope")  as string) ?? "";
+    const urlPrefix  = (formData.get("rule_urlPrefix")  as string) ?? "";
+    const device     = (formData.get("rule_device")     as string) ?? "";
+    const frequency  = (formData.get("rule_frequency")  as string) ?? "";
+
+    const errors = validateCampaignInput({
+        title, message, placement, pageScope, device, frequency,
+        urlPrefix, buttonUrl, priority: priorityRaw,
+    });
+    if (errors) return json({ errors });
 
     try {
         await createCampaign(session.shop, {
-            shopId: session.shop, // This might be ignored or used for ID lookup depending on model implementation
-            title,
-            message,
+            shopId: session.shop,
+            title: title.trim(),
+            message: message.trim(),
             placement,
-            priority,
+            priority: Number(priorityRaw),
             enabled,
             buttonText,
-            buttonUrl,
+            buttonUrl: buttonUrl.trim(),
             styleJson,
-            rule: {
-                pageScope,
-                urlPrefix,
-                device,
-                frequency,
-            },
+            rule: { pageScope, urlPrefix: urlPrefix.trim(), device, frequency },
         });
         return redirect("/app/campaigns");
     } catch (error) {
-        return json({ error: "Failed to create campaign" });
+        return json({ errors: { title: "Failed to save. Please try again." } as CampaignValidationErrors });
     }
 }
 
 export default function NewCampaign() {
     const submit = useSubmit();
     const nav = useNavigation();
-    // const actionData = useActionData<typeof action>();
+    const actionData = useActionData<typeof action>();
+    const errors = actionData?.errors as CampaignValidationErrors | undefined;
     const isSaving = nav.state === "submitting";
 
     const [formState, setFormState] = useState({
@@ -111,6 +115,7 @@ export default function NewCampaign() {
                                     value={formState.title}
                                     onChange={(v) => setFormState({ ...formState, title: v })}
                                     autoComplete="off"
+                                    error={errors?.title}
                                 />
                                 <Checkbox
                                     label="Enabled"
@@ -123,13 +128,15 @@ export default function NewCampaign() {
                                         options={[{ label: "Top", value: "TOP" }, { label: "Bottom", value: "BOTTOM" }]}
                                         value={formState.placement}
                                         onChange={(v) => setFormState({ ...formState, placement: v })}
+                                        error={errors?.placement}
                                     />
                                     <TextField
-                                        label="Priority (Higher = Displayed)"
+                                        label="Priority (−100 to 100)"
                                         type="number"
                                         value={formState.priority}
                                         onChange={(v) => setFormState({ ...formState, priority: v })}
                                         autoComplete="off"
+                                        error={errors?.priority}
                                     />
                                 </InlineGrid>
                             </BlockStack>
@@ -143,6 +150,7 @@ export default function NewCampaign() {
                                     value={formState.message}
                                     onChange={(v) => setFormState({ ...formState, message: v })}
                                     autoComplete="off"
+                                    error={errors?.message}
                                 />
                                 <InlineGrid columns={2} gap="400">
                                     <TextField
@@ -152,10 +160,11 @@ export default function NewCampaign() {
                                         autoComplete="off"
                                     />
                                     <TextField
-                                        label="Button URL (Optional)"
+                                        label="Button URL (Optional, https:// or /path)"
                                         value={formState.buttonUrl}
                                         onChange={(v) => setFormState({ ...formState, buttonUrl: v })}
                                         autoComplete="off"
+                                        error={errors?.buttonUrl}
                                     />
                                 </InlineGrid>
                                 <InlineGrid columns={2} gap="400">
@@ -190,6 +199,7 @@ export default function NewCampaign() {
                                     ]}
                                     value={formState.rule_pageScope}
                                     onChange={(v) => setFormState({ ...formState, rule_pageScope: v })}
+                                    error={errors?.pageScope}
                                 />
                                 {formState.rule_pageScope === "URL_PREFIX" && (
                                     <TextField
@@ -198,6 +208,7 @@ export default function NewCampaign() {
                                         onChange={(v) => setFormState({ ...formState, rule_urlPrefix: v })}
                                         autoComplete="off"
                                         helpText="e.g. /pages/summer-sale"
+                                        error={errors?.urlPrefix}
                                     />
                                 )}
                                 <InlineGrid columns={2} gap="400">
@@ -210,6 +221,7 @@ export default function NewCampaign() {
                                         ]}
                                         value={formState.rule_device}
                                         onChange={(v) => setFormState({ ...formState, rule_device: v })}
+                                        error={errors?.device}
                                     />
                                     <Select
                                         label="Frequency"
@@ -220,6 +232,7 @@ export default function NewCampaign() {
                                         ]}
                                         value={formState.rule_frequency}
                                         onChange={(v) => setFormState({ ...formState, rule_frequency: v })}
+                                        error={errors?.frequency}
                                     />
                                 </InlineGrid>
                             </BlockStack>

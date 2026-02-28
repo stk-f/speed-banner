@@ -40,7 +40,6 @@ export default function App() {
         </Link>
         <Link to="/app/campaigns">Campaigns</Link>
         <Link to="/app/guide">Guide</Link>
-        <Link to="/app/additional">Additional page</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>

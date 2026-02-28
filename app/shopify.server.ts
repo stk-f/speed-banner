@@ -69,22 +69,22 @@ const shopify = shopifyApp({
   },
   billing: {
     [MONTHLY_PLAN]: {
+      trialDays: 30,
       lineItems: [
         {
           amount: 9,
           currencyCode: "USD",
           interval: BillingInterval.Every30Days,
-          trialDays: 30,
         },
       ],
     },
     [ANNUAL_PLAN]: {
+      trialDays: 30,
       lineItems: [
         {
           amount: 90,
           currencyCode: "USD",
           interval: BillingInterval.Annual,
-          trialDays: 30,
         },
       ],
     },

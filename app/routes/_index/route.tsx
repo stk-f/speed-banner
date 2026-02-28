@@ -22,9 +22,9 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
+        <h1 className={styles.heading}>Speed Banner</h1>
         <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
+          Display lightweight announcement banners on your Shopify store — without slowing it down.
         </p>
         {showForm && (
           <Form className={styles.form} method="post" action="/auth/login">
@@ -40,16 +40,13 @@ export default function App() {
         )}
         <ul className={styles.list}>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Speed-first banner</strong>. Minimal JavaScript — no CLS or LCP impact on your store.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Impression &amp; click analytics</strong>. Track performance with a built-in 30-day dashboard.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Flexible targeting</strong>. Target by page, device, and display frequency.
           </li>
         </ul>
       </div>
